@@ -82,6 +82,7 @@ class PdfFileWriter(object):
     class (typically :class:`PdfFileReader<PdfFileReader>`).
     """
     def __init__(self):
+        # TODO: PDF-1.4 ?
         self._header = b_("%PDF-1.3")
         self._objects = []  # array of indirect objects
 
@@ -210,6 +211,28 @@ class PdfFileWriter(object):
         page = PageObject.createBlankPage(self, width, height)
         self.insertPage(page, index)
         return page
+
+    def addRawXMP(self, raw_xmp):
+        """
+        Adds a XMP object with custom contents
+        The format does not have to be necessarily correct ;)
+        """
+
+        # This is a subclass of DictionaryObject
+        xmp = DecodedStreamObject()
+        xmp.setData(raw_xmp)
+        xmp.update({
+            NameObject("/Subtype"): NameObject("/XML"),
+            NameObject("/Type"): NameObject("/Metadata"),
+            NameObject("/XML"): NameObject("/Type")
+            })
+        # This is a reference. Ex: 4 0 R
+        xmp_indirect_object = self._addObject(xmp)
+
+        # This adds another key(s) to the Catalog object
+        self._root_object.update({
+            NameObject("/Metadata"): xmp_indirect_object
+            })
 
     def addJS(self, javascript):
         """
